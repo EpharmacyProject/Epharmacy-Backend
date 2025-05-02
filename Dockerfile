@@ -17,8 +17,12 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+
 # Install Laravel dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Run migrations and start Laravel on correct port
-CMD sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
+# Expose port
+EXPOSE 8000
+
+# Start Laravel server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
