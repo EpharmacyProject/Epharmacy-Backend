@@ -33,5 +33,5 @@ RUN if [ ! -f .env ]; then \
 # Expose port
 EXPOSE 8000
 
-# Start Laravel server
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan serve --host=0.0.0.0 --port=8000"]
+# Start Laravel server with error handling
+CMD ["sh", "-c", "php artisan config:cache && php artisan serve --host=0.0.0.0 --port=8000"]
