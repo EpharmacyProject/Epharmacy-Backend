@@ -13,10 +13,31 @@ class Order extends Model
         'items',
         'total_amount',
         'status',
+        'prescription_uid',
+        'prescription_image',
     ];
 
-    public function customer()
+    public function setItemsAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['items'] = json_encode($value);
+        } else {
+            $this->attributes['items'] = $value;
+        }
+    }
+
+    public function getItemsAttribute($value)
+    {
+        return json_decode($value, true);
+    }
+
+    public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function prescription()
+    {
+        return $this->belongsTo(Prescription::class, 'prescription_uid', 'prescription_uid');
     }
 }

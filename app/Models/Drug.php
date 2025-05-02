@@ -13,8 +13,11 @@ class Drug extends Model
     protected $table = 'drugs';
   
     protected $casts = [
-        'expires_at' => 'datetime',  
+        'expires_at' => 'datetime',
+        'price' => 'float',
+        'stock' => 'integer'
     ];
+
     protected $fillable = [
         'name',
         'description',
@@ -24,7 +27,10 @@ class Drug extends Model
         'price',
         'stock',
         'dosage',
+        'image',
+        'created_by'
     ];
+
     public function toSearchableArray(){
         return [
             'name' => $this->name,
@@ -32,15 +38,23 @@ class Drug extends Model
             'brand' => $this->brand,
             'category' => $this->category,
             'dosage' => $this->dosage,
-           
         ];
     }
 
     public function orders()
-{
-    return $this->belongsToMany(Order::class, 'order_drug')
-                ->withPivot('quantity', 'price')
-                ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(Order::class, 'order_drug')
+                    ->withPivot('quantity', 'price')
+                    ->withTimestamps();
+    }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function scopeCreatedBy($query, $userId)
+    {
+        return $query->where('created_by', $userId);
+    }
 }

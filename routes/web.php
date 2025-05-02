@@ -28,10 +28,6 @@ Route::get('/register', function () {
     return view('register');
 })->name('register');
 
-Route::get('/login', function () {
-    return view('login');
-})->name('login');
-
 Route::get('/email/verify', function () {
     return view('email_verification');
 })->name('verification.notice');
@@ -48,7 +44,7 @@ Route::get('/password/reset/', function () {
 })->name('password.request');
 
 Route::get('/email/verification-failed', function () {
-    return "Verification failed. Invalid or expired link.";
+    return view('auth.verification-failed');
 })->name('verification.failed');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -67,7 +63,9 @@ Route::get('/pay/{orderId}', function ($orderId) {
         abort(404, 'Order not found');
     }
 
-  
-    return view('paypal', ['order_id' => $order->id]);
+    return view('paypal', [
+        'order_id' => $order->id,
+        'amount' => $order->total_amount
+    ]);
 })->name('payment');
 

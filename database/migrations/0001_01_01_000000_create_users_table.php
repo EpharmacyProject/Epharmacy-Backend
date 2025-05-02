@@ -19,7 +19,6 @@ return new class extends Migration
             $table->decimal('lat', 10, 7)->nullable(); 
             $table->decimal('lng', 10, 7)->nullable(); 
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->nullable()->comment('For Pharmacist only');
-            $table->string('license_image')->nullable()->comment('For Pharmacist only');
             $table->string('pharmacy_name')->nullable()->comment('For Pharmacist only'); 
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

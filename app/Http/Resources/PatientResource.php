@@ -15,13 +15,18 @@ class PatientResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (string) $this->id, 
-            'user_id' => (string) $this->user_id, 
-            'name' => $this->user->name, 
-            'email' => $this->user->email, 
-            'address' => $this->address, 
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'is_role' => $this->is_role,
+            'phone' => $this->phone,
+            'address' => $this->address,
+            'lat' => $this->lat,
+            'lng' => $this->lng,
+            'status' => $this->status,
+            'email_verified_at' => $this->email_verified_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }

@@ -14,18 +14,24 @@ class PharmacistResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => (string) $this->id, 
+            'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'phone' => $this->phone,
+            'phone_number' => $this->phone_number,
             'address' => $this->address,
-            'is_verified' => (bool) $this->is_verified, 
+            'lat' => $this->lat,
+            'lng' => $this->lng,
+            'is_role' => $this->is_role,
             'status' => $this->status,
-            'role' => $this->role,
-            'license_image' => $this->license_image ? asset('storage/' . $this->license_image) : null,
-            'pharmacy_name' => $this->pharmacy_name, 
-            'created_at' => $this->created_at->toISOString(), 
-            'updated_at' => $this->updated_at->toISOString(),
+            'pharmacy_name' => $this->pharmacy_name,
+            'tin_number' => $this->tin_number,
+            'bank_name' => $this->bank_name,
+            'account_number' => $this->account_number,
+            'license_image' => $this->license_image,
+            'tin_image' => $this->tin_image,
+            'email_verified_at' => $this->email_verified_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }

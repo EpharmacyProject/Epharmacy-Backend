@@ -17,46 +17,57 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Carbon;
 use App\Customs\Services\EmailVerificationService;
+use App\Services\AdminEmailService;
+use App\Customs\Services\CloudinaryService;
 use App\Http\Resources\PharmacistResource;
 use App\Http\Resources\PatientResource;
 
 class AuthController extends Controller
 {
-    public function __construct(private EmailVerificationService $service) {}
+    public function __construct(
+        private EmailVerificationService $service,
+        private AdminEmailService $adminEmailService,
+        private CloudinaryService $cloudinaryService
+    ) {}
 
-  
     public function register(RegistraationRequest $request)
     {
         $data = $request->validated();
     
-        
         if ($request->hasFile('license_image')) {
-            $licenseImage = $request->file('license_image');
-            $imagePath = $licenseImage->store('licenses', 'public'); 
-            $data['license_image'] = $imagePath;  
+            $result = $this->cloudinaryService->uploadImage($request->file('license_image'), 'licenses');
+            $data['license_image'] = $result['secure_url'];
+        }
+    
+        if ($request->hasFile('tin_image')) {
+            $result = $this->cloudinaryService->uploadImage($request->file('tin_image'), 'tin_documents');
+            $data['tin_image'] = $result['secure_url'];
         }
     
         $data['is_role'] = $request->input('is_role', 1);
         
-    
-    if ($request->filled('place_name') && $request->filled('lat') && $request->filled('lng')) {
-        $data['place_name'] = $request->input('place_name');
-        $data['address'] = $request->input('address');
-        $data['lat'] = $request->input('lat');
-        $data['lng'] = $request->input('lng');
-    }
-    
-        $user = User::create($data);
-    
-        if ($user) {
-            $this->service->sendVerificationLink($user);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User registered successfully. Please verify your email before logging in.'
-            ]);
+        if ($request->filled('place_name') && $request->filled('lat') && $request->filled('lng')) {
+            $data['place_name'] = $request->input('place_name');
+            $data['address'] = $request->input('address');
+            $data['lat'] = $request->input('lat');
+            $data['lng'] = $request->input('lng');
         }
     
-        return response()->json(['status' => 'failed', 'message' => 'An error occurred while creating the user.'], 500);
+        $user = User::create($data);
+        
+        // Send verification email
+        $this->service->sendVerificationLink($user);
+        
+        // If user is a pharmacist, send notification to admin
+        if ($user->is_role == 2) {
+            $this->adminEmailService->sendNewPharmacistNotification($user);
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User registered successfully',
+            'user' => $user
+        ], 201);
     }
     
 
@@ -64,17 +75,14 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $credentials = $request->validated();
-    
-       
-        if (!Auth::attempt($credentials)) {
+        
+        $user = User::where('email', $credentials['email'])->first();
+        
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json(['status' => 'failed', 'message' => 'Invalid credentials'], 401);
         }
     
-        $user = Auth::user();
-    
-        
         if ($user->is_role == 2) {
-            
             if ($user->status == 'pending') {
                 return response()->json(['status' => 'failed', 'message' => 'Your license is not verified yet. Please wait for approval.'], 403);
             }
@@ -84,25 +92,20 @@ class AuthController extends Controller
             }
         }
     
-     
         if (!$user->email_verified_at) {
             return response()->json(['status' => 'failed', 'message' => 'Please verify your email before logging in.'], 403);
         }
     
-        
-        $accessToken = Auth::login($user);
+        $token = $user->createToken('auth_token')->plainTextToken;
     
-        
         $refreshToken = Hash::make(now());
         DB::table('refresh_tokens')->updateOrInsert(
             ['user_id' => $user->id],
             ['token' => $refreshToken, 'expires_at' => now()->addDay()]
         );
     
-      
         $expiresIn = Carbon::now()->addMinutes(60)->timestamp;
     
-      
         $roleRedirects = [
             '0' => 'admin/dashboard', 
             '1' => 'patient/dashboard', 
@@ -111,10 +114,33 @@ class AuthController extends Controller
     
         return response()->json([
             'status' => 'success',
-            'redirect_url' => $roleRedirects[$user->is_role] ?? null,
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshToken,
-            'expires_in' => $expiresIn,
+            'message' => 'Login successful',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_role' => $user->is_role,
+                    'status' => $user->status,
+                    'email_verified_at' => $user->email_verified_at,
+                    'pharmacy_name' => $user->pharmacy_name,
+                    'phone' => $user->phone,
+                    'address' => $user->address,
+                    'lat' => $user->lat,
+                    'lng' => $user->lng,
+                    'license_image' => $user->license_image,
+                    'tin_image' => $user->tin_image,
+                    'tin_number' => $user->tin_number,
+                    'account_number' => $user->account_number,
+                    'bank_name' => $user->bank_name,
+                    'status_reason' => $user->status_reason,
+                    'status_updated_at' => $user->status_updated_at
+                ],
+                'token' => $token,
+                'refresh_token' => $refreshToken,
+                'expires_in' => $expiresIn,
+                'redirect_to' => $roleRedirects[$user->is_role] ?? 'dashboard'
+            ]
         ]);
     }
     

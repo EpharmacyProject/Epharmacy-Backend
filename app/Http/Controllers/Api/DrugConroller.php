@@ -3,30 +3,38 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DrugResource;
+use App\Customs\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Drug;
 use Illuminate\Support\Facades\Auth;
 use App\Models\InventoryLog;
+use Illuminate\Support\Facades\DB;
 
 class DrugConroller extends Controller
 {
+    protected $cloudinaryService;
+
+    public function __construct(CloudinaryService $cloudinaryService)
+    {
+        $this->cloudinaryService = $cloudinaryService;
+    }
+
     public function index(Request $request)
     {
         $drug_query = Drug::query();
         $drug_query->where('stock', '>', 0);
         $search_param = $request->query('q');
-        $drugs = $drug_query->paginate(10);
 
         if ($search_param) {
             $drug_query = Drug::search($search_param);
         }
 
-        $drug = $drug_query->get();
+        $drugs = $drug_query->paginate(10);
 
-        if ($drug->count() > 0) {
+        if ($drugs->count() > 0) {
             return response()->json([
-                'data' => DrugResource::collection($drug),
+                'data' => DrugResource::collection($drugs),
                 'meta' => [
                     'current_page' => $drugs->currentPage(),
                     'from' => $drugs->firstItem(),
@@ -47,6 +55,52 @@ class DrugConroller extends Controller
         }
     }
 
+   
+
+    public function getMyDrugs(Request $request)
+{
+    $user = Auth::user();
+
+    \Log::info('DrugController@getMyDrugs: Starting method', [
+        'user_id' => $user->id,
+        'role' => $user->is_role
+    ]);
+
+    if ($user->is_role !== 2) {
+        return response()->json(['message' => 'Only pharmacists can view their drugs.'], 403);
+    }
+
+    try {
+        // Get drugs using Eloquent
+        $drugs = \App\Models\Drug::where('created_by', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($drugs->isEmpty()) {
+            return response()->json([
+                'message' => 'No drugs found for this user',
+                'data' => []
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Drugs retrieved successfully',
+            'data' => $drugs
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('DrugController@getMyDrugs: Error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'message' => 'Error retrieving drugs',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+    
     public function store(Request $request)
     {
         if (Auth::user()->is_role !== 2) {
@@ -59,9 +113,9 @@ class DrugConroller extends Controller
             'brand' => 'required|string|max:255|min:1',
             'price' => 'required|integer|min:1',
             'category' => 'required|string|max:255|min:1',
-            'quantity' => 'required|integer|min:1',
             'dosage' => 'required|string|max:255|min:1',
             'stock' => 'required|integer|min:1',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -71,9 +125,14 @@ class DrugConroller extends Controller
             ], 422);
         }
 
-        $drug = Drug::create($request->all());
-
+        $imageResult = $this->cloudinaryService->uploadImage($request->file('image'), 'drugs');
         
+        $drugData = $request->except('image');
+        $drugData['image'] = $imageResult['secure_url'];
+        $drugData['created_by'] = Auth::id();
+
+        $drug = Drug::create($drugData);
+
         InventoryLog::create([
             'drug_id' => $drug->id,
             'user_id' => Auth::id(),
@@ -103,6 +162,7 @@ class DrugConroller extends Controller
             'category' => 'required|string|max:255|min:1',
             'dosage' => 'required|string|max:255|min:1',
             'stock' => 'required|integer|min:1',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -112,12 +172,16 @@ class DrugConroller extends Controller
             ], 422);
         }
 
-       
+        $drugData = $request->except('image');
+
+        if ($request->hasFile('image')) {
+            $imageResult = $this->cloudinaryService->uploadImage($request->file('image'), 'drugs');
+            $drugData['image'] = $imageResult['secure_url'];
+        }
+
         $previousStock = $drug->stock;
+        $drug->update($drugData);
 
-        $drug->update($request->all());
-
-       
         InventoryLog::create([
             'drug_id' => $drug->id,
             'user_id' => Auth::id(),
@@ -134,12 +198,17 @@ class DrugConroller extends Controller
 
     public function show(Drug $drug)
     {
-        return new DrugResource($drug);
+        return response()->json([
+            'data' => new DrugResource($drug)
+        ]);
     }
 
     public function destroy(Drug $drug)
     {
-        
+        if ($drug->public_id) {
+            $this->cloudinaryService->deleteImage($drug->public_id);
+        }
+
         InventoryLog::create([
             'drug_id' => $drug->id,
             'user_id' => Auth::id(),
@@ -165,9 +234,31 @@ class DrugConroller extends Controller
             ], 200);
         }
 
+        // Notify and email each pharmacist for their low-stock drugs
+        foreach ($lowStockDrugs as $drug) {
+            $pharmacist = $drug->creator;
+            if ($pharmacist) {
+                try {
+                    // Send notification (database and email)
+                    $pharmacist->notify(new \App\Notifications\LowStockAlertNotification($drug));
+                    \Log::info('Low stock notification sent to pharmacist', [
+                        'pharmacist_id' => $pharmacist->id,
+                        'drug_id' => $drug->id,
+                        'stock' => $drug->stock
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send low stock notification', [
+                        'pharmacist_id' => $pharmacist->id,
+                        'drug_id' => $drug->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
         return response()->json([
-            'message' => 'Low stock drugs',
-            'data' => DrugResource::collection($lowStockDrugs)
+            'message' => 'Low stock notifications sent successfully',
+            'data' => \App\Http\Resources\DrugResource::collection($lowStockDrugs)
         ]);
     }
 

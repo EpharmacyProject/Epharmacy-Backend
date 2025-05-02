@@ -20,7 +20,10 @@ return new class extends Migration
             $table->decimal('price', 10, 2); // Price with two decimal places
             $table->integer('stock')->default(0); // Available stock
             $table->string('dosage')->nullable(); // Dosage information
+            $table->string('image')->nullable(); // Drug image
             $table->timestamp('expires_at')->nullable(); // Expiration date of the drug
+            $table->unsignedBigInteger('created_by'); // User who created the drug
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps(); // created_at and updated_at timestamps
         });
     }

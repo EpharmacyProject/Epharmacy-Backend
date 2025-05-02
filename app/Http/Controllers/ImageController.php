@@ -1,24 +1,45 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Customs\Services\ImageService;
+use App\Customs\Services\CloudinaryService;
+use App\Models\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ImageController extends Controller
 {
-    protected $imageService;
+    protected $cloudinaryService;
 
-    public function __construct(ImageService $imageService)
+    public function __construct(CloudinaryService $cloudinaryService)
     {
-        $this->imageService = $imageService;
+        $this->cloudinaryService = $cloudinaryService;
     }
 
     public function store(Request $request)
     {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
         $user = Auth::user();
 
-        $image = $this->imageService->storeImage($request, $user->id);
+        // Delete existing image if any
+        $existingImage = Image::where('user_id', $user->id)->first();
+        if ($existingImage) {
+            if ($existingImage->public_id) {
+                $this->cloudinaryService->deleteImage($existingImage->public_id);
+            }
+            $existingImage->delete();
+        }
+
+        // Upload new image to Cloudinary
+        $result = $this->cloudinaryService->uploadImage($request->file('image'), 'profile_pictures');
+        
+        $image = Image::create([
+            'user_id' => $user->id,
+            'image_path' => $result['secure_url'],
+            'public_id' => $result['public_id']
+        ]);
 
         return response()->json([
             'message' => 'Profile picture updated successfully',
@@ -29,29 +50,58 @@ class ImageController extends Controller
     public function show()
     {
         $userId = Auth::id();
-        $image = $this->imageService->getProfilePicture($userId);
+        $image = Image::where('user_id', $userId)->first();
 
         return $image
             ? response()->json($image, 200)
             : response()->json(['message' => 'No profile picture found'], 404);
     }
+
     public function update(Request $request)
-{
-    $userId = auth()->id();
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
 
-    $image = $this->imageService->updateImage($request, $userId);
+        $userId = Auth::id();
+        $existingImage = Image::where('user_id', $userId)->first();
 
-    return response()->json([
-        'message' => 'Profile picture updated successfully',
-        'image' => $image
-    ], 200);
-}
+        if ($existingImage) {
+            if ($existingImage->public_id) {
+                $this->cloudinaryService->deleteImage($existingImage->public_id);
+            }
+            $existingImage->delete();
+        }
+
+        $result = $this->cloudinaryService->uploadImage($request->file('image'), 'profile_pictures');
+        
+        $image = Image::create([
+            'user_id' => $userId,
+            'image_path' => $result['secure_url'],
+            'public_id' => $result['public_id']
+        ]);
+
+        return response()->json([
+            'message' => 'Profile picture updated successfully',
+            'image' => $image
+        ], 200);
+    }
 
     public function destroy()
     {
         $userId = Auth::id();
-        return $this->imageService->deleteProfilePicture($userId)
-            ? response()->json(['message' => 'Profile picture deleted successfully'], 200)
-            : response()->json(['message' => 'No profile picture found'], 404);
+        $image = Image::where('user_id', $userId)->first();
+        
+        if (!$image) {
+            return response()->json(['message' => 'No profile picture found'], 404);
+        }
+
+        if ($image->public_id) {
+            $this->cloudinaryService->deleteImage($image->public_id);
+        }
+
+        $image->delete();
+
+        return response()->json(['message' => 'Profile picture deleted successfully'], 200);
     }
 }

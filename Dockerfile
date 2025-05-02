@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
-    libzip-dev \
     && docker-php-ext-install pdo pdo_mysql bcmath
 
 # Install Composer
@@ -24,5 +23,6 @@ RUN composer install --no-dev --optimize-autoloader
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start the Laravel server
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+# Start Laravel server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
