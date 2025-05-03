@@ -1,5 +1,5 @@
 # Use PHP CLI with required extensions
-FROM php:8.2-cli
+FROM php:8.2-apache
 
 # Set working directory
 WORKDIR /var/www
