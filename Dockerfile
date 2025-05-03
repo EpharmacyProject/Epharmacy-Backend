@@ -36,7 +36,7 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Expose the port (Railway assigns dynamically via $PORT)
-EXPOSE $PORT
+EXPOSE 8000
+CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache || true && php artisan view:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
 
 # Start Laravel server, cache configs/routes/views and run migrations at runtime
-CMD ["sh", "-c", "echo 'Running config:cache' && php artisan config:cache && echo 'Running route:cache' && php artisan route:cache || true && echo 'Running view:cache' && php artisan view:cache && echo 'Running migrate' && php artisan migrate --force && echo 'Starting server' && php artisan serve --host=0.0.0.0 --port=$PORT"]
