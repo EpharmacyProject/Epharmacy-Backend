@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\PatientController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
+Route::get('/', function () {
+    return response()->json(['status' => 'OK']);
+});
 
 Route::get('/', function () {
     return view('welcome');
