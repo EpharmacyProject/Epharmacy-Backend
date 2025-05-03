@@ -11,11 +11,10 @@ use App\Http\Controllers\Api\PatientController;
 
 use App\Http\Controllers\Api\Auth\AuthController;
 
-Route::get('/', function () {
-    return response()->json(['status' => 'OK'], 200);
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok'], 200);
 });
-
-Route::get('/welcome', function () {
+Route::get('/', function () {
     return view('welcome');
 });
 Route::get('/app',function(){
@@ -35,9 +34,9 @@ Route::get('/email/verify', function () {
     return view('email_verification');
 })->name('verification.notice');
 
-Route::get('/forgot-password', function () {
-    return view('forgot_password');
-})->name('password.request');
+// Route::get('/forgot-password', function () {
+//     return view('forgot_password');
+// })->name('password.request');
 
 Route::get('/email/verified', function () {
     return view('auth.verified');
