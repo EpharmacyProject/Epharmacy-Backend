@@ -1,8 +1,8 @@
-# Use PHP with Apache
-FROM php:8.2-apache
+# Use PHP CLI with required extensions
+FROM php:8.2-cli
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /var/www
 
 # Copy project files
 COPY . .
@@ -17,17 +17,12 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+
 # Install Laravel dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Configure Apache
-RUN a2enmod rewrite
-COPY docker/apache2.conf /etc/apache2/sites-available/000-default.conf
+# Expose port
+EXPOSE 8000
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage
-
-# Run migrations before starting the server
-CMD ["sh", "-c", "php artisan migrate --force && apache2-foreground"]
-
+# Start Laravel server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
