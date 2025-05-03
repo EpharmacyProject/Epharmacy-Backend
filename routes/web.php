@@ -42,9 +42,9 @@ Route::get('/forgot-password', function () {
 Route::get('/email/verified', function () {
     return view('auth.verified');
 })->name('verification.success');
-Route::get('/password/reset/', function () {
-    return view('emails.password_reset');
-})->name('password.reset.view');
+// Route::get('/password/reset/', function () {
+//     return view('emails.password_reset');
+// })->name('password.reset.view');
 
 Route::get('/email/verification-failed', function () {
     return view('auth.verification-failed');
