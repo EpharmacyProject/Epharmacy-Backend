@@ -2,7 +2,7 @@
 FROM php:8.2-cli
 
 # Set working directory
-WORKDIR /var/www
+WORKDIR /var/www/html
 
 # Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -26,8 +26,8 @@ COPY . .
 RUN composer dump-autoload --optimize
 
 # Set permissions for Laravel storage and cache
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expose the port (Railway assigns dynamically via $PORT)
 EXPOSE $PORT
