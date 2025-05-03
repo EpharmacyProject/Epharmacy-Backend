@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Api\PatientController;
 
-
+use App\Http\Controllers\Api\Auth\AuthController;
 
 
 Route::get('/', function () {
@@ -41,7 +41,7 @@ Route::get('/email/verified', function () {
 })->name('verification.success');
 Route::get('/password/reset/', function () {
     return view('emails.password_reset');
-})->name('password.request');
+})->name('password.reset.view');
 
 Route::get('/email/verification-failed', function () {
     return view('auth.verification-failed');

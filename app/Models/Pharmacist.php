@@ -14,19 +14,19 @@ class Pharmacist extends Model
     protected $table = 'users';
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'phone',
-        'address',
-        'lat', 
-        'lng', 
-        'status', 
-        'license_image', 
-        'is_role',
+        'user_id',
+        'license_number',
+        'license_image',
+        'pharmacy_name',
+        'pharmacy_address',
+        'pharmacy_phone',
+        'status'
     ];
 
-   
+    protected $casts = [
+        'status' => 'string'
+    ];
+
     public function setPasswordAttribute($value)
     {
         if ($value) {
@@ -34,10 +34,19 @@ class Pharmacist extends Model
         }
     }
 
-    
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function drugs()
+    {
+        return $this->hasMany(Drug::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 
     #[SearchUsingPrefix(['status'])]
@@ -52,15 +61,14 @@ class Pharmacist extends Model
         ];
     }
 
-    
     public function getPrescriptionImageAttribute($value)
     {
         return $value ? asset('storage/' . $value) : null;
     }
 
-    
     public function getLicenseImageAttribute($value)
     {
         return $value ? asset('storage/' . $value) : null;
     }
 }
+

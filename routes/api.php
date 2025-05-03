@@ -44,8 +44,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/refresh_token', [AuthController::class, 'refreshToken']);
     Route::post('/verify_user_email', [AuthController::class, 'verifyUserEmail']);
     Route::post('/resend_email_verification_link', [AuthController::class, 'resendEmailVerificationLink']);
-    Route::post('/forgot-password', [PasswordController::class, 'sendResetLink']);
-    Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
+    //Route::post('/forgot-password', [PasswordController::class, 'sendResetLink']);
+    //Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
     Route::get('/password/reset/{token}', [PasswordController::class, 'showResetForm'])->name('password.reset');
 });
 
