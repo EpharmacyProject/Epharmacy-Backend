@@ -1,5 +1,6 @@
 # Use PHP CLI with required extensions
-FROM php:8.2-apache
+FROM php:8.2-cli
+
 
 # Set working directory
 WORKDIR /var/www
@@ -38,5 +39,6 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
 # Expose the port (Railway assigns dynamically via $PORT)
 EXPOSE 8000
 CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache || true && php artisan view:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+
 
 # Start Laravel server, cache configs/routes/views and run migrations at runtime

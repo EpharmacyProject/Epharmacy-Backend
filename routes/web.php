@@ -12,10 +12,10 @@ use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\Auth\AuthController;
 
 Route::get('/', function () {
-    return response()->json(['status' => 'OK']);
+    return response()->json(['status' => 'OK'], 200);
 });
 
-Route::get('/', function () {
+Route::get('/welcome', function () {
     return view('welcome');
 });
 Route::get('/app',function(){
