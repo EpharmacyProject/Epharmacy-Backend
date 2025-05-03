@@ -31,7 +31,6 @@ use App\Http\Controllers\Api\PlaceController;
 // Public routes for email verification and admin actions
 Route::get('/verify-email/{token}', [AdminController::class, 'verifyEmail']);
 Route::match(['get', 'post'], '/admin/pharmacists/{id}/status', [AdminController::class, 'updatePharmacistStatus']);
-Route::get('/admin/pharmacists/{id}/action', [AdminController::class, 'handleEmailAction']);
 
 // Public Drug Routes
 Route::get('/drugs', [DrugConroller::class, 'index']);
@@ -43,9 +42,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/refresh_token', [AuthController::class, 'refreshToken']);
     Route::post('/verify_user_email', [AuthController::class, 'verifyUserEmail']);
-    Route::post('/resend_email_verification_link', [AuthController::class, 'resendEmailVerificationLink']);
-    //Route::post('/forgot-password', [PasswordController::class, 'sendResetLink']);
-    //Route::post('/reset-password', [PasswordController::class, 'resetPassword']);
+    //Route::post('/resend_email_verification_link', [AuthController::class, 'resendEmailVerificationLink']);
+    Route::post('/forgot-password', [PasswordController::class, 'sendResetLink']);
     Route::get('/password/reset/{token}', [PasswordController::class, 'showResetForm'])->name('password.reset');
 });
 
@@ -53,8 +51,7 @@ Route::prefix('auth')->group(function () {
 Route::get('/auth/google/url', [GoogleAuthController::class, 'redirect']);
 Route::post('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-// Places Public Route
-Route::get('/user-locations', [PlaceController::class, 'userLocations']);
+
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -137,22 +134,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/my-drugs', [DrugConroller::class, 'getMyDrugs']);
 });
 
-// Test route for email configuration
-Route::get('/test-email', function () {
-    try {
-        $email = 'your_email@example.com'; // Replace with your email
-        \Illuminate\Support\Facades\Mail::raw('Test email', function($message) use ($email) {
-            $message->to($email)
-                   ->subject('Test Email');
-        });
-        \Log::info('Test email sent successfully to: ' . $email);
-        return response()->json(['status' => 'success', 'message' => 'Test email sent']);
-    } catch (\Exception $e) {
-        \Log::error('Test email error: ' . $e->getMessage());
-        \Log::error('Stack trace: ' . $e->getTraceAsString());
-        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-    }
-});
+
 
 
 

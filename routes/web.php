@@ -69,3 +69,13 @@ Route::get('/pay/{orderId}', function ($orderId) {
     ]);
 })->name('payment');
 
+// Admin Pharmacist Action Routes
+Route::get('/admin/pharmacists/{id}/action', [App\Http\Controllers\AdminController::class, 'handlePharmacistAction'])
+    ->name('admin.pharmacist.action')
+    ->middleware(['auth', 'admin']);
+
+// Admin Dashboard Route
+Route::get('/admin/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])
+    ->name('admin.dashboard')
+    ->middleware(['auth', 'admin']);
+

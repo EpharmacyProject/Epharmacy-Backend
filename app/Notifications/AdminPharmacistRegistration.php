@@ -32,9 +32,17 @@ class AdminPharmacistRegistration extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-        $verificationUrl = url('/api/verify-email/' . $this->verificationToken);
-        $approveUrl = url('/api/admin/pharmacists/' . $this->pharmacist->id . '/action?status=approved&reason=Documents verified');
-        $rejectUrl = url('/api/admin/pharmacists/' . $this->pharmacist->id . '/action?status=rejected&reason=Documents not verified');
+        $verificationUrl = route('verification.notice', ['token' => $this->verificationToken]);
+        $approveUrl = route('admin.pharmacist.action', [
+            'id' => $this->pharmacist->id,
+            'status' => 'approved',
+            'reason' => 'Documents verified'
+        ]);
+        $rejectUrl = route('admin.pharmacist.action', [
+            'id' => $this->pharmacist->id,
+            'status' => 'rejected',
+            'reason' => 'Documents not verified'
+        ]);
 
         return (new MailMessage)
             ->subject('New Pharmacist Registration - Action Required')
@@ -44,15 +52,9 @@ class AdminPharmacistRegistration extends Notification implements ShouldQueue
             ->line('Name: ' . $this->pharmacist->name)
             ->line('Email: ' . $this->pharmacist->email)
             ->line('License Number: ' . $this->pharmacist->license_number)
-            ->line('License Image:')
-            ->action('View License', url($this->licenseImage))
-            ->line('TIN Image:')
-            ->action('View TIN', url($this->tinImage))
             ->line('Please review the documents and take appropriate action:')
-            ->action('Verify Email', $verificationUrl)
-            ->line('Click the buttons below to approve or reject the registration:')
-            ->action('Approve Registration', $approveUrl)
-            ->action('Reject Registration', $rejectUrl)
+            ->line('To view the documents and take action, please visit the admin dashboard.')
+            ->action('Go to Admin Dashboard', route('admin.dashboard'))
             ->line('Thank you for your attention to this matter.');
     }
 } 
